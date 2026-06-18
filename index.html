@@ -979,7 +979,23 @@ function atualizaDash(){
   `}</div>`;
 
   // Cats
-  const dc2=document.getElementById('d-cats');if(dc2)dc2.innerHTML=sorted.length===0?'<div style="font-family:var(--cg);font-size:11px;color:#4A5270;text-align:center;padding:1rem 0">Nenhuma despesa neste mes</div>':sorted.slice(0,7).map(([cat,val])=>`<div class="dcat-row"><div class="dcat-lbl">${cat}</div><div class="dcat-bar-bg"><div class="dcat-bar-fill" style="width:${totCat>0+(val/totCat*100).toFixed(0):0}%;background:${isCasal?'#534AB7':catCor(dashPerfil,cat)}"></div></div><div class="dcat-val">${fmt(val)}</div></div>`).join('');
+  const dc2=document.getElementById('d-cats');
+  if(dc2){
+    if(sorted.length===0){
+      dc2.innerHTML='<div style="font-family:var(--cg);font-size:11px;color:#4A5270;text-align:center;padding:1rem 0">Nenhuma despesa neste mes</div>';
+    } else {
+      dc2.innerHTML=sorted.slice(0,7).map(function(entry){
+        var cat=entry[0],val=entry[1];
+        var w=totCat>0?((val/totCat)*100).toFixed(0):0;
+        var bg=isCasal?'#534AB7':catCor(dashPerfil,cat);
+        return '<div class="dcat-row">'
+          +'<div class="dcat-lbl">'+cat+'</div>'
+          +'<div class="dcat-bar-bg"><div class="dcat-bar-fill" style="width:'+w+'%;background:'+bg+'"></div></div>'
+          +'<div class="dcat-val">'+fmt(val)+'</div>'
+          +'</div>';
+      }).join('');
+    }
+  }
 
   // Divisao de despesas partilhadas
   const partilhadas=txsAll.filter(t=>t.tipo==='despesa'&&t.partilhada&&new Date(t.data+'T12:00:00').getMonth()===mes&&new Date(t.data+'T12:00:00').getFullYear()===ano);
@@ -1353,29 +1369,6 @@ function bkpAgora(){exportarDados();bkpFechar();}
 function bkpDepois(){SS('bkp_last_date',Date.now());bkpFechar();}
 function bkpNao(){SS('bkp_muted',true);bkpFechar();}
 function bkpFechar(){const el=document.getElementById('backup-reminder');if(el){el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);}}
-
-// ═══════════════════════════════════════
-// FIX: cats bar chart width bug
-// ═══════════════════════════════════════
-// Patch the dcat bar (was missing + sign in template literal)
-const _origAtualizaDash=atualizaDash;
-atualizaDash=function(){
-  _origAtualizaDash.apply(this,arguments);
-  // re-fix cat bars after render
-  setTimeout(()=>{
-    const dc2=document.getElementById('d-cats');
-    const dashPf=dashPerfil;const isCasal2=dashPf==='casal';
-    if(!dc2)return;
-    const mSel=document.getElementById('d-mes');const aSel=document.getElementById('d-ano');
-    const mes=mSel?parseInt(mSel.value):NOW.getMonth();const ano=aSel?parseInt(aSel.value):NOW.getFullYear();
-    const adultos2=usuarios.filter(u=>u.tipo==='adulto');
-    const perfis2=isCasal2?adultos2.map(u=>u.id):[dashPf];
-    const filAll2=perfis2.flatMap(uid=>getMesData(getTxs(uid),mes,ano).fil);
-    const catMap={};filAll2.filter(t=>t.tipo==='despesa').forEach(t=>{catMap[t.categoria]=(catMap[t.categoria]||0)+Number(t.valor);});
-    const sorted=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);const totCat=sorted.reduce((a,c)=>a+c[1],0);
-    if(sorted.length>0)dc2.innerHTML=sorted.slice(0,7).map(([cat,val])=>`<div class="dcat-row"><div class="dcat-lbl">${cat}</div><div class="dcat-bar-bg"><div class="dcat-bar-fill" style="width:${totCat>0?((val/totCat)*100).toFixed(0):0}%;background:${isCasal2?'#534AB7':catCor(dashPf,cat)}"></div></div><div class="dcat-val">${fmt(val)}</div></div>`).join('');
-  },200);
-};
 
 // ═══════════════════════════════════════
 // INIT
